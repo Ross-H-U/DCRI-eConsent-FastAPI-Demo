@@ -1,11 +1,9 @@
-from fastapi import APIRouter, Request, Body
+from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-from fastapi.responses import JSONResponse
 import pandas as pd
 import plotly.express as px
 import base64
-import io
 
 router = APIRouter()
 
@@ -20,6 +18,15 @@ class ReportRequest(BaseModel):
     coordinator: Optional[str] = "All"
     method: Optional[str] = "All"
     show_flags_only: Optional[bool] = False
+
+@router.get("/filters")
+def get_filters():
+    return {
+        "trials": sorted(df["TrialID"].unique().tolist()),
+        "sites": sorted(df["Site"].unique().tolist()),
+        "coordinators": sorted(df["Coordinator"].unique().tolist()),
+        "consent_methods": sorted(df["ConsentMethod"].unique().tolist())
+    }
 
 @router.post("/run-report")
 async def run_report(payload: ReportRequest):
@@ -40,7 +47,12 @@ async def run_report(payload: ReportRequest):
     filtered["MissingConsent"] = filtered["ConsentDate"].isna()
     filtered["LateConsent"] = (filtered["EnrollmentDate"] - filtered["ConsentDate"]).dt.days > 3
     filtered["OutdatedProtocol"] = filtered["ConsentVersion"] != filtered["ProtocolVersionAtConsent"]
-    filtered["Flagged"] = filtered["MissingConsent"] | ~filtered["FormsComplete"] | filtered["Withdrawn"] | filtered["OutdatedProtocol"]
+    filtered["Flagged"] = (
+        filtered["MissingConsent"] |
+        ~filtered["FormsComplete"] |
+        filtered["Withdrawn"] |
+        filtered["OutdatedProtocol"]
+    )
 
     if flags_only:
         filtered = filtered[filtered["Flagged"]]
@@ -66,8 +78,8 @@ async def run_report(payload: ReportRequest):
         "consent_method_distribution": fig_to_base64(px.pie(filtered, names="ConsentMethod")),
         "cumulative_enrollments": fig_to_base64(px.line(
             filtered.dropna(subset=["EnrollmentDate"]).sort_values("EnrollmentDate"),
-            x="EnrollmentDate", y=list(range(1, len(filtered.dropna(subset=["EnrollmentDate"]))+1))
-        ))
+            x="EnrollmentDate", y=list(range(1, len(filtered.dropna(subset=["EnrollmentDate"]))+1)))
+        )
     }
 
     return {
