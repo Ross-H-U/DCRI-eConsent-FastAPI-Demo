@@ -22,20 +22,14 @@ def get_filters():
     }
 
 @router.post("/run-report", response_model=ReportResponse)
-async def run_report(
-    trial: Annotated[str, Form()],
-    site: Annotated[Optional[str], Form()] = "All",
-    coordinator: Annotated[Optional[str], Form()] = "All",
-    method: Annotated[Optional[str], Form()] = "All",
-    show_flags_only: Annotated[Optional[bool], Form()] = False,
-):
-    filtered = df[df["TrialID"] == trial]
-    if site and site != "All":
-        filtered = filtered[filtered["Site"] == site]
-    if coordinator and coordinator != "All":
-        filtered = filtered[filtered["Coordinator"] == coordinator]
-    if method and method != "All":
-        filtered = filtered[filtered["ConsentMethod"] == method]
+async def run_report(data: Annotated[ReportInput, Form()]):
+    filtered = df[df["TrialID"] == data.trial]
+    if data.site and data.site != "All":
+        filtered = filtered[filtered["Site"] == data.site]
+    if data.coordinator and data.coordinator != "All":
+        filtered = filtered[filtered["Coordinator"] == data.coordinator]
+    if data.method and data.method != "All":
+        filtered = filtered[filtered["ConsentMethod"] == data.method]
 
     filtered["MissingConsent"] = filtered["ConsentDate"].isna()
     filtered["LateConsent"] = (filtered["EnrollmentDate"] - filtered["ConsentDate"]).dt.days > 3
@@ -47,7 +41,7 @@ async def run_report(
         filtered["OutdatedProtocol"]
     )
 
-    if show_flags_only:
+    if data.show_flags_only:
         filtered = filtered[filtered["Flagged"]]
 
     avg_time = (filtered["EnrollmentDate"] - filtered["ConsentDate"]).dt.days.mean()
