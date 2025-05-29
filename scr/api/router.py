@@ -1,8 +1,9 @@
-from fastapi import APIRouter
-from api.schemas import ReportRequest, ReportResponse, KPIResult
+from fastapi import APIRouter, Form
+from typing import Optional, Annotated
 import pandas as pd
 import plotly.express as px
 import base64
+from api.schemas import ReportResponse, KPIResult
 
 router = APIRouter()
 
@@ -21,13 +22,13 @@ def get_filters():
     }
 
 @router.post("/run-report", response_model=ReportResponse)
-async def run_report(payload: ReportRequest):
-    trial = payload.trial
-    site = payload.site
-    coordinator = payload.coordinator
-    method = payload.method
-    flags_only = payload.show_flags_only
-
+async def run_report(
+    trial: Annotated[str, Form()],
+    site: Annotated[Optional[str], Form()] = "All",
+    coordinator: Annotated[Optional[str], Form()] = "All",
+    method: Annotated[Optional[str], Form()] = "All",
+    show_flags_only: Annotated[Optional[bool], Form()] = False,
+):
     filtered = df[df["TrialID"] == trial]
     if site and site != "All":
         filtered = filtered[filtered["Site"] == site]
@@ -46,7 +47,7 @@ async def run_report(payload: ReportRequest):
         filtered["OutdatedProtocol"]
     )
 
-    if flags_only:
+    if show_flags_only:
         filtered = filtered[filtered["Flagged"]]
 
     avg_time = (filtered["EnrollmentDate"] - filtered["ConsentDate"]).dt.days.mean()
