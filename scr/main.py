@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from router import router
 
 app = FastAPI(
-    title="Health Calculation API",
-    description="A FastAPI service for clinical calculations.",
+    title="DCRI eConsent Dashboard Demo FastAPI",
+    description="A FastAPI service for eConsent Dashboard.",
     version="1.0.0",
 )
 
