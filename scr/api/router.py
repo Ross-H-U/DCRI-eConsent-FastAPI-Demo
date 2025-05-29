@@ -1,6 +1,5 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import Optional
+from api.schemas import ReportRequest, ReportResponse, KPIResult
 import pandas as pd
 import plotly.express as px
 import base64
@@ -12,13 +11,6 @@ df = pd.DataFrame(data)
 df["ConsentDate"] = pd.to_datetime(df["ConsentDate"], errors="coerce")
 df["EnrollmentDate"] = pd.to_datetime(df["EnrollmentDate"], errors="coerce")
 
-class ReportRequest(BaseModel):
-    trial: str
-    site: Optional[str] = "All"
-    coordinator: Optional[str] = "All"
-    method: Optional[str] = "All"
-    show_flags_only: Optional[bool] = False
-
 @router.get("/filters")
 def get_filters():
     return {
@@ -28,7 +20,7 @@ def get_filters():
         "consent_methods": sorted(df["ConsentMethod"].unique().tolist())
     }
 
-@router.post("/run-report")
+@router.post("/run-report", response_model=ReportResponse)
 async def run_report(payload: ReportRequest):
     trial = payload.trial
     site = payload.site
@@ -62,19 +54,19 @@ async def run_report(payload: ReportRequest):
     form_error = round((~filtered["FormsComplete"]).mean() * 100, 2)
     withdrawn = int(filtered["Withdrawn"].sum())
 
-    kpis = {
-        "average_consent_time": f"{avg_time:.1f} days" if pd.notna(avg_time) else "N/A",
-        "late_consents": late_count,
-        "form_error_rate": f"{form_error}%",
-        "withdrawn": withdrawn
-    }
+    kpis = KPIResult(
+        average_consent_time=f"{avg_time:.1f} days" if pd.notna(avg_time) else "N/A",
+        late_consents=late_count,
+        form_error_rate=f"{form_error}%",
+        withdrawn=withdrawn
+    )
 
-def fig_to_base64(fig):
-    try:
-        img_bytes = fig.to_image(format="png")
-        return base64.b64encode(img_bytes).decode()
-    except Exception as e:
-        return f"Error generating chart: {str(e)}"
+    def fig_to_base64(fig):
+        try:
+            img_bytes = fig.to_image(format="png")
+            return base64.b64encode(img_bytes).decode()
+        except Exception as e:
+            return f"Error generating chart: {str(e)}"
 
     charts = {
         "consent_status_by_site": fig_to_base64(px.histogram(filtered, x="Site", color="ConsentStatus", barmode="group")),
@@ -85,8 +77,8 @@ def fig_to_base64(fig):
         )
     }
 
-    return {
-        "kpis": kpis,
-        "records": filtered.fillna("").to_dict(orient="records"),
-        "charts_base64": charts
-    }
+    return ReportResponse(
+        kpis=kpis,
+        records=filtered.fillna("").to_dict(orient="records"),
+        charts_base64=charts
+    )
