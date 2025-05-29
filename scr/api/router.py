@@ -69,9 +69,12 @@ async def run_report(payload: ReportRequest):
         "withdrawn": withdrawn
     }
 
-    def fig_to_base64(fig):
+def fig_to_base64(fig):
+    try:
         img_bytes = fig.to_image(format="png")
         return base64.b64encode(img_bytes).decode()
+    except Exception as e:
+        return f"Error generating chart: {str(e)}"
 
     charts = {
         "consent_status_by_site": fig_to_base64(px.histogram(filtered, x="Site", color="ConsentStatus", barmode="group")),
