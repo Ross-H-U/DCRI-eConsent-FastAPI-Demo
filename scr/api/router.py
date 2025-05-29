@@ -23,21 +23,20 @@ def get_filters():
         "consent_methods": sorted(df["ConsentMethod"].unique().tolist())
     }
 
-@router.post("/run-report")
-
 class ReportRequest(BaseModel):
     trial: str
     site: Optional[str] = "All"
     coordinator: Optional[str] = "All"
     method: Optional[str] = "All"
     show_flags_only: Optional[bool] = False
-async def run_report(request: Request):
-    params = await request.json()
-    trial = params.get("trial")
-    site = params.get("site")
-    coordinator = params.get("coordinator")
-    method = params.get("method")
-    flags_only = params.get("show_flags_only", False)
+
+@router.post("/run-report")
+async def run_report(payload: ReportRequest):
+    trial = payload.trial
+    site = payload.site
+    coordinator = payload.coordinator
+    method = payload.method
+    flags_only = payload.show_flags_only
 
     filtered = df[df["TrialID"] == trial]
     if site and site != "All":
