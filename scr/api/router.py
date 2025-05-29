@@ -14,15 +14,6 @@ df = pd.DataFrame(data)
 df["ConsentDate"] = pd.to_datetime(df["ConsentDate"], errors="coerce")
 df["EnrollmentDate"] = pd.to_datetime(df["EnrollmentDate"], errors="coerce")
 
-@router.get("/filters")
-def get_filters():
-    return {
-        "trials": sorted(df["TrialID"].unique().tolist()),
-        "sites": sorted(df["Site"].unique().tolist()),
-        "coordinators": sorted(df["Coordinator"].unique().tolist()),
-        "consent_methods": sorted(df["ConsentMethod"].unique().tolist())
-    }
-
 class ReportRequest(BaseModel):
     trial: str
     site: Optional[str] = "All"
