@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import router
+from api.router import router
 
 app = FastAPI(
     title="DCRI eConsent Dashboard Demo FastAPI",
