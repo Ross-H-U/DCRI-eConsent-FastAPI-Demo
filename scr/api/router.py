@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Form
-from typing import Optional, Annotated
+from typing import Annotated
 import pandas as pd
 import plotly.express as px
 import base64
-from api.schemas import ReportResponse, KPIResult
+from api.schemas import ReportInput, ReportResponse, KPIResult
 
 router = APIRouter()
 
